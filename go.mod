@@ -1,4 +1,4 @@
-module github.com/xtaci/kcp-go/v5
+module github.com/metacubex/kcp-go
 
 go 1.20
 

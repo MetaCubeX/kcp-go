@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/xtaci/kcp-go/v5"
+	"github.com/metacubex/kcp-go"
 	"golang.org/x/crypto/pbkdf2"
 )
 
