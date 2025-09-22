@@ -93,13 +93,15 @@ func (r *RingBuffer[T]) Peek() (*T, bool) {
 // Discard discards the first N elements from the ring buffer.
 // Returns the number of elements that are actually discarded (<= n).
 func (r *RingBuffer[T]) Discard(n int) int {
-	n = min(n, r.Len())
+	if r.Len() < n {
+		n = r.Len()
+	}
 	if n == r.Len() {
 		r.Clear()
 		return n
 	}
 	var zero T
-	for range n {
+	for i := 0; i < n; i++ {
 		r.elements[r.head] = zero
 		r.head = (r.head + 1) % len(r.elements)
 	}

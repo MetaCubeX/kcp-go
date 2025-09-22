@@ -280,12 +280,13 @@ func (kcp *KCP) PeekSize() (length int) {
 		return -1
 	}
 
-	for seg := range kcp.rcv_queue.ForEach {
+	kcp.rcv_queue.ForEach(func(seg *segment) bool {
 		length += len(seg.data)
 		if seg.frg == 0 {
-			break
+			return false
 		}
-	}
+		return true
+	})
 	return
 }
 
@@ -359,7 +360,7 @@ func (kcp *KCP) Send(buffer []byte) int {
 	// append to previous segment in streaming mode (if possible)
 	if kcp.stream != 0 {
 		if n := kcp.snd_queue.Len(); n > 0 {
-			for seg := range kcp.snd_queue.ForEachReverse {
+			kcp.snd_queue.ForEachReverse(func(seg *segment) bool {
 				if len(seg.data) < int(kcp.mss) {
 					capacity := int(kcp.mss) - len(seg.data)
 					extend := capacity
@@ -373,9 +374,10 @@ func (kcp *KCP) Send(buffer []byte) int {
 					seg.data = seg.data[:oldlen+extend]
 					copy(seg.data[oldlen:], buffer)
 					buffer = buffer[extend:]
+					return true
 				}
-				break
-			}
+				return false
+			})
 		}
 
 		if len(buffer) == 0 {
@@ -456,7 +458,7 @@ func (kcp *KCP) parse_ack(sn uint32) {
 		return
 	}
 
-	for seg := range kcp.snd_buf.ForEach {
+	kcp.snd_buf.ForEach(func(seg *segment) bool {
 		if sn == seg.sn {
 			// mark and free space, but leave the segment here,
 			// and wait until `una` to delete this, then we don't
@@ -464,12 +466,13 @@ func (kcp *KCP) parse_ack(sn uint32) {
 			// which is an expensive operation for large window
 			seg.acked = 1
 			kcp.recycleSegment(seg)
-			break
+			return false
 		}
 		if _itimediff(sn, seg.sn) < 0 {
-			break
+			return false
 		}
-	}
+		return true
+	})
 }
 
 func (kcp *KCP) parse_fastack(sn, ts uint32) {
@@ -477,25 +480,27 @@ func (kcp *KCP) parse_fastack(sn, ts uint32) {
 		return
 	}
 
-	for seg := range kcp.snd_buf.ForEach {
+	kcp.snd_buf.ForEach(func(seg *segment) bool {
 		if _itimediff(sn, seg.sn) < 0 {
-			break
+			return false
 		} else if sn != seg.sn && _itimediff(seg.ts, ts) <= 0 {
 			seg.fastack++
 		}
-	}
+		return true
+	})
 }
 
 func (kcp *KCP) parse_una(una uint32) int {
 	count := 0
-	for seg := range kcp.snd_buf.ForEach {
+	kcp.snd_buf.ForEach(func(seg *segment) bool {
 		if _itimediff(una, seg.sn) > 0 {
 			kcp.recycleSegment(seg)
 			count++
 		} else {
-			break
+			return false
 		}
-	}
+		return true
+	})
 	kcp.snd_buf.Discard(count)
 	return count
 }
@@ -817,10 +822,10 @@ func (kcp *KCP) flush(ackOnly bool) uint32 {
 	var change, lostSegs, fastRetransSegs, earlyRetransSegs uint64
 	minrto := int32(kcp.interval)
 
-	for segment := range kcp.snd_buf.ForEach {
+	kcp.snd_buf.ForEach(func(segment *segment) bool {
 		needsend := false
 		if segment.acked == 1 {
-			continue
+			return true
 		}
 		if segment.xmit == 0 { // initial transmit
 			needsend = true
@@ -874,7 +879,8 @@ func (kcp *KCP) flush(ackOnly bool) uint32 {
 		if rto := _itimediff(segment.resendts, current); rto > 0 && rto < minrto {
 			minrto = rto
 		}
-	}
+		return true
+	})
 
 	// flash remain segments
 	flushBuffer()
@@ -989,14 +995,20 @@ func (kcp *KCP) Check() uint32 {
 
 	tm_flush = _itimediff(ts_flush, current)
 
-	for seg := range kcp.snd_buf.ForEach {
+	needReturn := false
+	kcp.snd_buf.ForEach(func(seg *segment) bool {
 		diff := _itimediff(seg.resendts, current)
 		if diff <= 0 {
-			return current
+			needReturn = true
+			return false
 		}
 		if diff < tm_packet {
 			tm_packet = diff
 		}
+		return true
+	})
+	if needReturn {
+		return current
 	}
 
 	minimal = uint32(tm_packet)
