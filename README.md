@@ -195,7 +195,7 @@ CPU revision	: 3
 2020/01/05 19:25:13 beginning tests, encryption:salsa20, fec:10/3
 goos: linux
 goarch: arm
-pkg: github.com/xtaci/kcp-go/v5
+pkg: github.com/metacubex/kcp-go
 BenchmarkSM4-4                     20000             86475 ns/op          34.69 MB/s           0 B/op          0 allocs/op
 BenchmarkAES128-4                  20000             62254 ns/op          48.19 MB/s           0 B/op          0 allocs/op
 BenchmarkAES192-4                  20000             71802 ns/op          41.78 MB/s           0 B/op          0 allocs/op
@@ -227,7 +227,7 @@ BenchmarkSinkSpeed64K-4             1000           1587906 ns/op          41.27 
 BenchmarkSinkSpeed256K-4             100          16277830 ns/op          32.21 MB/s      453027 B/op       9296 allocs/op
 BenchmarkSinkSpeed1M-4               100          31040703 ns/op          33.78 MB/s      898097 B/op      18932 allocs/op
 PASS
-ok      github.com/xtaci/kcp-go/v5      64.151s
+ok      github.com/metacubex/kcp-go      64.151s
 ```
 
 
