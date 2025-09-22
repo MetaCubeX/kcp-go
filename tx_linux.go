@@ -29,7 +29,6 @@ import (
 	"os"
 	"sync/atomic"
 
-	"github.com/pkg/errors"
 	"golang.org/x/net/ipv4"
 )
 
@@ -64,7 +63,7 @@ func (s *UDPSession) tx(txqueue []ipv4.Message) {
 					}
 				}
 			}
-			s.notifyWriteError(errors.WithStack(err))
+			s.notifyWriteError(err)
 			break
 		}
 	}

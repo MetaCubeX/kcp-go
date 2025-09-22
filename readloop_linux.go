@@ -30,7 +30,6 @@ import (
 	"os"
 	"sync/atomic"
 
-	"github.com/pkg/errors"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
 )
@@ -80,7 +79,7 @@ func (s *UDPSession) readLoop() {
 					}
 				}
 			}
-			s.notifyReadError(errors.WithStack(err))
+			s.notifyReadError(err)
 			return
 		}
 	}
@@ -130,7 +129,7 @@ func (l *Listener) monitor() {
 					}
 				}
 			}
-			l.notifyReadError(errors.WithStack(err))
+			l.notifyReadError(err)
 			return
 		}
 	}

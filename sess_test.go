@@ -37,7 +37,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 	"golang.org/x/crypto/pbkdf2"
 )
 

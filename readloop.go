@@ -24,8 +24,6 @@ package kcp
 
 import (
 	"sync/atomic"
-
-	"github.com/pkg/errors"
 )
 
 // defaultReadLoop is the standard procedure for reading from a connection
@@ -46,7 +44,7 @@ func (s *UDPSession) defaultReadLoop() {
 			}
 			s.packetInput(buf[:n])
 		} else {
-			s.notifyReadError(errors.WithStack(err))
+			s.notifyReadError(err)
 			return
 		}
 	}
@@ -59,7 +57,7 @@ func (l *Listener) defaultMonitor() {
 		if n, from, err := l.conn.ReadFrom(buf); err == nil {
 			l.packetInput(buf[:n], from)
 		} else {
-			l.notifyReadError(errors.WithStack(err))
+			l.notifyReadError(err)
 			return
 		}
 	}
