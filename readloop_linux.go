@@ -29,9 +29,9 @@ import (
 	"net"
 	"os"
 	"sync/atomic"
+	"syscall"
 
 	"golang.org/x/net/ipv4"
-	"golang.org/x/net/ipv6"
 )
 
 // readLoop is the optimized version of readLoop for linux utilizing recvmmsg syscall
@@ -87,14 +87,16 @@ func (s *UDPSession) readLoop() {
 
 // monitor is the optimized version of monitor for linux utilizing recvmmsg syscall
 func (l *Listener) monitor() {
+	// Allows callers to pass in a connection that already satisfies batchConn interface
+	// to make use of the optimisation. Otherwise, ipv4.NewPacketConn would unwrap the file descriptor
+	// via SyscallConn(), and read it that way, which might not be what the caller wants.
 	var xconn batchConn
-	if _, ok := l.conn.(*net.UDPConn); ok {
-		addr, err := net.ResolveUDPAddr("udp", l.conn.LocalAddr().String())
-		if err == nil {
-			if addr.IP.To4() != nil {
+	if ibc, ok := l.conn.(batchConn); ok {
+		xconn = ibc
+	} else if _, ok := l.conn.(net.Conn); ok {
+		if sConn, ok := l.conn.(syscall.Conn); ok {
+			if _, err := sConn.SyscallConn(); err == nil {
 				xconn = ipv4.NewPacketConn(l.conn)
-			} else {
-				xconn = ipv6.NewPacketConn(l.conn)
 			}
 		}
 	}

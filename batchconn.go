@@ -22,11 +22,19 @@
 
 package kcp
 
-import "golang.org/x/net/ipv4"
+import (
+	"golang.org/x/net/ipv4"
+	"golang.org/x/net/ipv6"
+)
 
 const (
 	batchSize = 16
 )
+
+// Contrary to what the naming suggests, the ipv{4,6}.Message is not dependent on the IP version.
+// They're both just aliases for x/net/internal/socket.Message.
+// This means we can use this struct to read from a socket that receives both IPv4 and IPv6 messages.
+var _ ipv4.Message = ipv6.Message{}
 
 // batchConn defines the interface used in batch IO
 type batchConn interface {
