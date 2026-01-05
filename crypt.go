@@ -31,8 +31,6 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/tjfoc/gmsm/sm4"
-
 	"golang.org/x/crypto/blowfish"
 	"golang.org/x/crypto/cast5"
 	"golang.org/x/crypto/pbkdf2"
@@ -175,15 +173,6 @@ func (c *salsa20BlockCrypt) Encrypt(dst, src []byte) {
 func (c *salsa20BlockCrypt) Decrypt(dst, src []byte) {
 	salsa20.XORKeyStream(dst[8:], src[8:], src[:8], &c.key)
 	copy(dst[:8], src[:8])
-}
-
-// NewSM4BlockCrypt https://github.com/tjfoc/gmsm/tree/master/sm4
-func NewSM4BlockCrypt(key []byte) (BlockCrypt, error) {
-	block, err := sm4.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	return newBlockCrypt(block), nil
 }
 
 // NewTwofishBlockCrypt https://en.wikipedia.org/wiki/Twofish

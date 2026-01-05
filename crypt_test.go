@@ -35,15 +35,6 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
-func TestSM4(t *testing.T) {
-	bc, err := NewSM4BlockCrypt(pass[:16])
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	cryptTest(t, bc)
-}
-
 func TestAES(t *testing.T) {
 	bc, err := NewAESBlockCrypt(pass[:32])
 	if err != nil {
@@ -210,15 +201,6 @@ func testAEAD(t *testing.T, bc BlockCrypt) {
 	if !bytes.Equal(data, decrypted[nonceSize:]) {
 		t.Fail()
 	}
-}
-
-func BenchmarkSM4(b *testing.B) {
-	bc, err := NewSM4BlockCrypt(pass[:16])
-	if err != nil {
-		b.Fatal(err)
-		return
-	}
-	benchCrypt(b, bc)
 }
 
 func BenchmarkAES128(b *testing.B) {
@@ -430,9 +412,6 @@ func BenchmarkAEAD_Chacha20_Poly1035(b *testing.B) {
 func TestCryptErrors(t *testing.T) {
 	invalidKey := []byte("invalid")
 
-	if _, err := NewSM4BlockCrypt(invalidKey); err == nil {
-		t.Error("NewSM4BlockCrypt should fail with invalid key")
-	}
 	if _, err := NewTwofishBlockCrypt(invalidKey); err == nil {
 		t.Error("NewTwofishBlockCrypt should fail with invalid key")
 	}
