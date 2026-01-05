@@ -51,24 +51,26 @@ type (
 	}
 )
 
+// Contrary to what the naming suggests, the ipv{4,6}.Message is not dependent on the IP version.
+// They're both just aliases for x/net/internal/socket.Message.
+// This means we can use this struct to read from a socket that receives both IPv4 and IPv6 messages.
+var _ ipv4.Message = ipv6.Message{}
+
 // newBatchConn creates a batchConn based on the IP version of the provided net.PacketConn.
 func newBatchConn(conn net.PacketConn) batchConn {
-	if _, ok := conn.(udpConn); !ok {
-		return nil
+	// Allows callers to pass in a connection that already satisfies batchConn interface
+	// to make use of the optimisation. Otherwise, ipv4.NewPacketConn would unwrap the file descriptor
+	// via SyscallConn(), and read it that way, which might not be what the caller wants.
+	if ibc, ok := conn.(batchConn); ok {
+		return ibc
+	} else if _, ok := conn.(net.Conn); ok {
+		if sConn, ok := conn.(syscall.Conn); ok {
+			if _, err := sConn.SyscallConn(); err == nil {
+				return ipv4.NewPacketConn(conn)
+			}
+		}
 	}
-
-	// Resolve the local UDP address to determine IP version
-	addr, err := net.ResolveUDPAddr("udp", conn.LocalAddr().String())
-	if err != nil {
-		return nil
-	}
-
-	// Determine if the connection is IPv4 or IPv6 based on the local address
-	if addr.IP.To4() != nil {
-		return ipv4.NewPacketConn(conn)
-	}
-
-	return ipv6.NewPacketConn(conn)
+	return nil
 }
 
 func (sess *UDPSession) initPlatform() {
