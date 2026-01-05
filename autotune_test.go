@@ -124,7 +124,7 @@ func testGroup(t *testing.T, gid int, signals []uint32, expectedFalse, expectedT
 func TestAutoTuneOverflow(t *testing.T) {
 	// minimal test
 	tune := autoTune{}
-	for i := range 1024 {
+	for i := 0; i < 1024; i++ {
 		if i%maxAutoTuneSamples == 0 {
 			tune.Sample(false, uint32(i))
 		} else {

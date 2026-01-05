@@ -267,7 +267,7 @@ func (dec *fecDecoder) decode(in fecPacket) (recovered [][]byte) {
 				if shards[k] != nil {
 					dlen := len(shards[k])
 					shards[k] = shards[k][:maxlen]
-					clear(shards[k][dlen:])
+					clearSlice(shards[k][dlen:])
 				} else if k < dec.dataShards {
 					// prepare memory for the data recovery
 					shards[k] = defaultBufferPool.Get()[:0]
@@ -429,7 +429,7 @@ func (enc *fecEncoder) encode(b []byte, rto uint32) (ps [][]byte) {
 			for i := 0; i < enc.dataShards; i++ {
 				shard := enc.shardCache[i]
 				slen := len(shard)
-				clear(shard[slen:enc.maxSize])
+				clearSlice(shard[slen:enc.maxSize])
 			}
 
 			// construct equal-sized slice with stripped header

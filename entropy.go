@@ -27,9 +27,10 @@ import (
 	"crypto/cipher"
 	crand "crypto/rand"
 	"io"
-	"math/rand/v2"
 	"runtime"
 	"sync"
+
+	rand "github.com/metacubex/randv2"
 
 	"golang.org/x/sys/cpu"
 )

@@ -31,7 +31,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"log/slog"
 	mrand "math/rand"
 	"net"
 	"net/http"
@@ -42,6 +41,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"golang.org/x/exp/slog"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/pbkdf2"
@@ -437,7 +438,7 @@ func randomEchoTest(t *testing.T, cli *UDPSession, N int64) {
 		if err != nil && err != io.EOF {
 			t.Fatalf("Read error: %v", err)
 		}
-		for i := range n {
+		for i := 0; i < n; i++ {
 			expectedByte := byte(r.Int())
 			if rcvbuf[i] != expectedByte {
 				t.Fatalf("Data mismatch at byte %d: got %v, want %v", bytesReceived+int64(i), rcvbuf[i], expectedByte)
@@ -538,7 +539,7 @@ func randomEchoVectorTest(t *testing.T, cli *UDPSession) {
 		if err != nil && err != io.EOF {
 			t.Fatalf("Read error: %v", err)
 		}
-		for i := range n {
+		for i := 0; i < n; i++ {
 			expectedByte := byte(r.Int())
 			if rcvbuf[i] != expectedByte {
 				t.Fatalf("Data mismatch at byte %d: got %v, want %v", bytesReceived+int64(i), rcvbuf[i], expectedByte)
@@ -584,7 +585,7 @@ func TestTinyBufferReceiver(t *testing.T) {
 	}
 	sndbuf := make([]byte, 7)
 	rcvbuf := make([]byte, 7)
-	for range N {
+	for i := 0; i < N; i++ {
 		fillBuffer(sndbuf)
 		cli.Write(sndbuf)
 
@@ -670,7 +671,7 @@ func TestParallel1024CLIENT_64BMSG_64CNT(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1024)
-	for range 1024 {
+	for i := 0; i < 1024; i++ {
 		go parallel_client(&wg, port)
 	}
 	wg.Wait()
@@ -761,7 +762,7 @@ func sinkclient(b *testing.B, nbytes int) {
 func echo_tester(cli net.Conn, msglen, msgcount int) error {
 	go func() {
 		buf := make([]byte, msglen)
-		for range msgcount {
+		for i := 0; i < msgcount; i++ {
 			// send packet
 			if _, err := cli.Write(buf); err != nil {
 				panic(err)
@@ -788,7 +789,7 @@ func echo_tester(cli net.Conn, msglen, msgcount int) error {
 func sink_tester(cli *UDPSession, msglen, msgcount int) error {
 	// sender
 	buf := make([]byte, msglen)
-	for range msgcount {
+	for i := 0; i < msgcount; i++ {
 		if _, err := cli.Write(buf); err != nil {
 			return err
 		}
@@ -934,7 +935,7 @@ func TestReliability(t *testing.T) {
 	buf := make([]byte, 128)
 	msg := make([]byte, 128)
 
-	for range N {
+	for i := 0; i < N; i++ {
 		io.ReadFull(rand.Reader, msg)
 		cli.Write([]byte(msg))
 
@@ -1148,7 +1149,7 @@ func TestSetLogger(t *testing.T) {
 	cli.SetLogger(IKCP_LOG_ALL, newLoggerWithMilliseconds().Info)
 	const N = 10
 	buf := make([]byte, 10)
-	for i := range N {
+	for i := 0; i < N; i++ {
 		msg := fmt.Sprintf("trace%v", i)
 		cli.Write([]byte(msg))
 
@@ -1403,10 +1404,10 @@ func TestOOB(t *testing.T) {
 		defer wg.Done()
 		// Send OOB data of varying lengths in a loop, content is [0,1,2,...]
 		buf := make([]byte, size)
-		for i := range len(buf) {
+		for i := 0; i < len(buf); i++ {
 			buf[i] = byte(i)
 		}
-		for i := range 10 * 1024 * 1024 {
+		for i := 0; i < 10*1024*1024; i++ {
 			if err := cli.SendOOB(buf[:i%sizePlus1]); err != nil {
 				t.Errorf("client failed to send OOB payload: %v", err)
 			}
@@ -1494,10 +1495,10 @@ func TestOOB_OneSideHandler(t *testing.T) {
 		defer wg.Done()
 		// Client does NOT set OOB handler, only sends OOB packets of varying lengths.
 		buf := make([]byte, size)
-		for i := range len(buf) {
+		for i := 0; i < len(buf); i++ {
 			buf[i] = byte(i)
 		}
-		for i := range 10 * 1024 * 1024 {
+		for i := 0; i < 10*1024*1024; i++ {
 			if err := cli.SendOOB(buf[:i%sizePlus1]); err != nil {
 				t.Errorf("client failed to send OOB payload: %v", err)
 			}

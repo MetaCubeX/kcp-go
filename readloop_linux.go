@@ -64,7 +64,7 @@ func (s *UDPSession) readLoop() {
 			return
 		}
 
-		for i := range count {
+		for i := 0; i < count; i++ {
 			msg := &msgs[i]
 
 			// make sure the packet is from the same source
@@ -104,7 +104,7 @@ func (l *Listener) monitor() {
 			return
 		}
 
-		for i := range count {
+		for i := 0; i < count; i++ {
 			msg := &msgs[i]
 			l.packetInput(msg.Buffers[0][:msg.N], msg.Addr)
 		}

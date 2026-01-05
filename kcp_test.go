@@ -25,10 +25,11 @@ package kcp
 import (
 	"container/heap"
 	"io"
-	"log/slog"
 	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/exp/slog"
 
 	"github.com/xtaci/lossyconn"
 )
@@ -131,7 +132,7 @@ func testlink(t *testing.T, client *lossyconn.LossyConn, server *lossyconn.Lossy
 		s.SetNoDelay(nodelay, interval, resend, nc)
 		buf := make([]byte, 64)
 		var rtt time.Duration
-		for range repeat {
+		for i := 0; i < repeat; i++ {
 			start := time.Now()
 			s.Write(buf)
 			io.ReadFull(s, buf)
@@ -151,13 +152,13 @@ func testlink(t *testing.T, client *lossyconn.LossyConn, server *lossyconn.Lossy
 func BenchmarkFlush(b *testing.B) {
 	kcp := NewKCP(1, func(buf []byte, size int) {})
 	kcp.snd_buf = NewRingBuffer[segment](1024)
-	for range kcp.snd_buf.MaxLen() {
+	for i := 0; i < kcp.snd_buf.MaxLen(); i++ {
 		kcp.snd_buf.Push(segment{xmit: 1, resendts: currentMs() + 10000})
 	}
 
 	b.ReportAllocs()
 	var mu sync.Mutex
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		mu.Lock()
 		kcp.flush(IKCP_FLUSH_FULL)
 		mu.Unlock()
@@ -205,7 +206,7 @@ func BenchmarkDebugLog(b *testing.B) {
 	}
 	kcp.log = slog.Debug
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		// In release mode, this line of code will be completely 'erased' by the compiler,
 		// as if it doesn't exist at all, and even the parameter's interface conversion will not occur.
 		kcp.debugLog(IKCP_LOG_OUT_WASK, "conv", kcp.conv, "wnd", kcp.snd_wnd)

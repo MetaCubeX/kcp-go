@@ -116,7 +116,7 @@ func BenchmarkCsprngSystem(b *testing.B) {
 	data := make([]byte, md5.Size)
 	b.SetBytes(int64(len(data)))
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		io.ReadFull(rand.Reader, data)
 	}
 }
@@ -126,7 +126,7 @@ func BenchmarkCsprngAES128(b *testing.B) {
 	b.SetBytes(aes.BlockSize)
 
 	r := NewEntropyAES()
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		io.ReadFull(r, data[:])
 	}
 }
@@ -136,7 +136,7 @@ func BenchmarkCsprngChacha8(b *testing.B) {
 	b.SetBytes(8)
 
 	r := NewEntropyChacha8()
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		io.ReadFull(r, data[:])
 	}
 }

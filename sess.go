@@ -502,7 +502,9 @@ func (s *UDPSession) SetWindowSize(sndwnd, rcvwnd int) {
 
 // SetMtu sets the maximum transmission unit(not including UDP header)
 func (s *UDPSession) SetMtu(mtu int) bool {
-	mtu = min(mtuLimit, mtu)
+	if mtu > mtuLimit {
+		mtu = mtuLimit
+	}
 
 	mtu -= s.headerSize
 	if aead, ok := s.block.(*aeadCrypt); ok {
@@ -962,7 +964,11 @@ func (s *UDPSession) packetInput(data []byte) {
 
 	// basic check for minimum packet size
 	// NOTE: OOB allows sending small packets and even empty packets.
-	if len(data) < min(IKCP_OVERHEAD, fecHeaderSizePlus2+convSize) {
+	minValue := fecHeaderSizePlus2 + convSize
+	if minValue > IKCP_OVERHEAD {
+		minValue = IKCP_OVERHEAD
+	}
+	if len(data) < minValue {
 		atomic.AddUint64(&DefaultSnmp.KCPInErrors, 1)
 		return
 	}
@@ -1133,7 +1139,11 @@ func (l *Listener) packetInput(data []byte, addr net.Addr) {
 
 	// basic check for minimum packet size
 	// NOTE: OOB allows sending small packets and even empty packets.
-	if len(data) < min(IKCP_OVERHEAD, fecHeaderSizePlus2+convSize) {
+	minValue := fecHeaderSizePlus2 + convSize
+	if minValue > IKCP_OVERHEAD {
+		minValue = IKCP_OVERHEAD
+	}
+	if len(data) < minValue {
 		return
 	}
 

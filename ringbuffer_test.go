@@ -12,7 +12,7 @@ func TestRingSize(t *testing.T) {
 	}
 
 	// re-zero
-	for i := range 64 {
+	for i := 0; i < 64; i++ {
 		r.Push(i)
 		r.Pop()
 		if r.Len() != 0 {
@@ -28,7 +28,7 @@ func TestRingSize(t *testing.T) {
 	for {
 		use := rand.Int() % (left + 1)
 		left -= use
-		for range use {
+		for i := 0; i < use; i++ {
 			if _, ok := r.Pop(); !ok {
 				t.Errorf("Expected to pop value, but got none")
 			}
@@ -51,15 +51,15 @@ func TestRingSize(t *testing.T) {
 func TestRingSize2(t *testing.T) {
 	// emulate a condition where head = 32， tail=31, and Len() = 63
 	r := NewRingBuffer[int](64)
-	for i := range 63 {
+	for i := 0; i < 63; i++ {
 		r.Push(i)
 	}
-	for range 32 {
+	for i := 0; i < 32; i++ {
 		if _, ok := r.Pop(); !ok {
 			t.Errorf("Expected to pop value, but got none")
 		}
 	}
-	for i := range 32 {
+	for i := 0; i < 32; i++ {
 		r.Push(i + 63)
 		if r.Len() != i+(63-32+1) {
 			t.Errorf("Expected length %d after popping 31 elements, got %d", i+(63-32+1), r.Len())
@@ -104,14 +104,14 @@ func TestRingBuffer(t *testing.T) {
 		t.Errorf("Expected length 0, got %d", r.Len())
 	}
 
-	for i := range 64 {
+	for i := 0; i < 64; i++ {
 		r.Push(i)
 		if r.Len() != i+1 {
 			t.Errorf("Expected length %d, got %d", i+1, r.Len())
 		}
 	}
 
-	for i := range 32 {
+	for i := 0; i < 32; i++ {
 		val, ok := r.Pop()
 		if !ok || val != i {
 			t.Errorf("Expected to pop %d, got %d (ok: %v)", i, val, ok)
@@ -124,7 +124,7 @@ func TestRingBuffer(t *testing.T) {
 
 	// Push more elements to test the ring's behavior
 	size := r.Len()
-	for i := range 32 {
+	for i := 0; i < 32; i++ {
 		r.Push(i)
 		if r.Len() != i+1+size {
 			t.Errorf("Expected length %d, got %d", i+1+size, r.Len())
@@ -163,7 +163,7 @@ func TestRingBufferGrow(t *testing.T) {
 
 	// Push enough elements to trigger multiple grows
 	pushCount := 100
-	for i := range pushCount {
+	for i := 0; i < pushCount; i++ {
 		r.Push(i)
 
 		// Check if capacity is among expected
@@ -192,7 +192,7 @@ func TestRingBufferGrow(t *testing.T) {
 	}
 
 	// Check values are preserved in correct order
-	for i := range pushCount {
+	for i := 0; i < pushCount; i++ {
 		v, ok := r.Pop()
 		if !ok {
 			t.Fatalf("expected to pop value at index %d", i)
@@ -206,7 +206,7 @@ func TestRingBufferGrow(t *testing.T) {
 
 func TestRingForEach(t *testing.T) {
 	r := NewRingBuffer[int](10)
-	for i := range 10 {
+	for i := 0; i < 10; i++ {
 		r.Push(i)
 	}
 
@@ -238,7 +238,7 @@ func TestRingForEach(t *testing.T) {
 
 func TestRingForEachReverse(t *testing.T) {
 	r := NewRingBuffer[int](10)
-	for i := range 10 {
+	for i := 0; i < 10; i++ {
 		r.Push(i)
 	}
 

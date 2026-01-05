@@ -324,12 +324,13 @@ func (kcp *KCP) PeekSize() (length int) {
 		return -1
 	}
 
-	for seg := range kcp.rcv_queue.ForEach {
+	kcp.rcv_queue.ForEach(func(seg *segment) bool {
 		length += len(seg.data)
 		if seg.frg == 0 {
-			break
+			return false
 		}
-	}
+		return true
+	})
 	return
 }
 
@@ -406,10 +407,13 @@ func (kcp *KCP) Send(buffer []byte) int {
 	// append to previous segment in streaming mode (if possible)
 	if kcp.stream != 0 {
 		if n := kcp.snd_queue.Len(); n > 0 {
-			for seg := range kcp.snd_queue.ForEachReverse {
+			kcp.snd_queue.ForEachReverse(func(seg *segment) bool {
 				if len(seg.data) < int(kcp.mss) {
 					capacity := int(kcp.mss) - len(seg.data)
-					extend := min(len(buffer), capacity)
+					extend := len(buffer)
+					if extend > capacity {
+						extend = capacity
+					}
 
 					// grow slice, the underlying cap is guaranteed to
 					// be larger than kcp.mss
@@ -418,8 +422,8 @@ func (kcp *KCP) Send(buffer []byte) int {
 					copy(seg.data[oldlen:], buffer)
 					buffer = buffer[extend:]
 				}
-				break
-			}
+				return false
+			})
 		}
 
 		if len(buffer) == 0 {
@@ -443,7 +447,10 @@ func (kcp *KCP) Send(buffer []byte) int {
 
 	for i := 0; i < count; i++ {
 		var size int
-		size = min(len(buffer), int(kcp.mss))
+		size = len(buffer)
+		if size > int(kcp.mss) {
+			size = int(kcp.mss)
+		}
 		seg := kcp.newSegment(size)
 		copy(seg.data, buffer[:size])
 		if kcp.stream == 0 { // message mode
@@ -496,7 +503,7 @@ func (kcp *KCP) parse_ack(sn uint32) {
 		return
 	}
 
-	for seg := range kcp.snd_buf.ForEach {
+	kcp.snd_buf.ForEach(func(seg *segment) bool {
 		if sn == seg.sn {
 			// mark and free space, but leave the segment here,
 			// and wait until `una` to delete this, then we don't
@@ -504,12 +511,13 @@ func (kcp *KCP) parse_ack(sn uint32) {
 			// which is an expensive operation for large window
 			seg.acked = 1
 			kcp.recycleSegment(seg)
-			break
+			return false
 		}
 		if _itimediff(sn, seg.sn) < 0 {
-			break
+			return false
 		}
-	}
+		return true
+	})
 }
 
 func (kcp *KCP) parse_fastack(sn, ts uint32) int {
@@ -518,9 +526,9 @@ func (kcp *KCP) parse_fastack(sn, ts uint32) int {
 		return 0
 	}
 
-	for seg := range kcp.snd_buf.ForEach {
+	kcp.snd_buf.ForEach(func(seg *segment) bool {
 		if _itimediff(sn, seg.sn) < 0 {
-			break
+			return false
 		} else if sn != seg.sn && _itimediff(seg.ts, ts) <= 0 {
 			if seg.fastack != 0xFFFFFFFF {
 				seg.fastack++
@@ -529,21 +537,23 @@ func (kcp *KCP) parse_fastack(sn, ts uint32) int {
 				}
 			}
 		}
-	}
+		return true
+	})
 
 	return shouldFastAck
 }
 
 func (kcp *KCP) parse_una(una uint32) int {
 	count := 0
-	for seg := range kcp.snd_buf.ForEach {
+	kcp.snd_buf.ForEach(func(seg *segment) bool {
 		if _itimediff(una, seg.sn) > 0 {
 			kcp.recycleSegment(seg)
 			count++
 		} else {
-			break
+			return false
 		}
-	}
+		return true
+	})
 	kcp.snd_buf.Discard(count)
 	return count
 }
@@ -889,10 +899,10 @@ func (kcp *KCP) flush(flushType FlushType) (nextUpdate uint32) {
 	nextUpdate = kcp.interval
 
 	if flushType == IKCP_FLUSH_FULL {
-		for segment := range kcp.snd_buf.ForEach {
+		kcp.snd_buf.ForEach(func(segment *segment) bool {
 			needsend := false
 			if segment.acked == 1 {
-				continue
+				return true
 			}
 			if segment.xmit == 0 { // initial transmit
 				needsend = true
@@ -948,7 +958,8 @@ func (kcp *KCP) flush(flushType FlushType) (nextUpdate uint32) {
 			if rto := _itimediff(segment.resendts, current); rto > 0 && uint32(rto) < nextUpdate {
 				nextUpdate = uint32(rto)
 			}
-		}
+			return true
+		})
 	}
 
 	// counter updates
@@ -974,14 +985,20 @@ func (kcp *KCP) flush(flushType FlushType) (nextUpdate uint32) {
 		// rate halving, https://tools.ietf.org/html/rfc6937
 		if change > 0 {
 			inflight := kcp.snd_nxt - kcp.snd_una
-			kcp.ssthresh = max(inflight/2, IKCP_THRESH_MIN)
+			kcp.ssthresh = inflight / 2
+			if kcp.ssthresh < IKCP_THRESH_MIN {
+				kcp.ssthresh = IKCP_THRESH_MIN
+			}
 			kcp.cwnd = kcp.ssthresh + resent
 			kcp.incr = kcp.cwnd * kcp.mss
 		}
 
 		// congestion control, https://tools.ietf.org/html/rfc5681
 		if lostSegs > 0 {
-			kcp.ssthresh = max(cwnd/2, IKCP_THRESH_MIN)
+			kcp.ssthresh = cwnd / 2
+			if kcp.ssthresh < IKCP_THRESH_MIN {
+				kcp.ssthresh = IKCP_THRESH_MIN
+			}
 			kcp.cwnd = 1
 			kcp.incr = kcp.mss
 		}
@@ -1055,14 +1072,20 @@ func (kcp *KCP) Check() uint32 {
 
 	tm_flush = _itimediff(ts_flush, current)
 
-	for seg := range kcp.snd_buf.ForEach {
+	diffReturn := false
+	kcp.snd_buf.ForEach(func(seg *segment) bool {
 		diff := _itimediff(seg.resendts, current)
 		if diff <= 0 {
-			return current
+			diffReturn = true
+			return false
 		}
 		if diff < tm_packet {
 			tm_packet = diff
 		}
+		return true
+	})
+	if diffReturn {
+		return current
 	}
 
 	minimal = uint32(tm_packet)

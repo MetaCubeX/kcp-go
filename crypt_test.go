@@ -340,7 +340,7 @@ func benchCrypt(b *testing.B, bc BlockCrypt) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(enc) * 2))
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		bc.Encrypt(enc, data)
 		bc.Decrypt(dec, enc)
 	}
@@ -349,7 +349,7 @@ func benchCrypt(b *testing.B, bc BlockCrypt) {
 func BenchmarkCRC32(b *testing.B) {
 	content := make([]byte, 1024)
 	b.SetBytes(int64(len(content)))
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		crc32.ChecksumIEEE(content)
 	}
 }
@@ -364,7 +364,7 @@ func BenchmarkCFB_AES_128_CRC32(b *testing.B) {
 	data := make([]byte, 1400, mtuLimit)
 	b.SetBytes(1400)
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		checksum := crc32.ChecksumIEEE(data[cryptHeaderSize:])
 		binary.LittleEndian.PutUint32(data[nonceSize:cryptHeaderSize], checksum)
 		bc.Encrypt(data, data)
@@ -388,7 +388,7 @@ func BenchmarkAEAD_AES_128_GCM(b *testing.B) {
 	nonce := data[:aead.NonceSize()]
 	plaintext := data[aead.NonceSize():]
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		aead.Seal(plaintext[:0], nonce, plaintext, nil)
 	}
 }
@@ -403,7 +403,7 @@ func BenchmarkCFB_Salsa20_CRC32(b *testing.B) {
 	data := make([]byte, 1400, mtuLimit)
 	b.SetBytes(1400)
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		checksum := crc32.ChecksumIEEE(data[cryptHeaderSize:])
 		binary.LittleEndian.PutUint32(data[nonceSize:cryptHeaderSize], checksum)
 		bc.Encrypt(data, data)
@@ -422,7 +422,7 @@ func BenchmarkAEAD_Chacha20_Poly1035(b *testing.B) {
 	nonce := data[:aead.NonceSize()]
 	plaintext := data[aead.NonceSize():]
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		aead.Seal(plaintext[:0], nonce, plaintext, nil)
 	}
 }

@@ -74,7 +74,7 @@ func NewTimedSched(parallel int) *TimedSched {
 	ts.die = make(chan struct{})
 	ts.chPrependNotify = make(chan struct{}, 1)
 
-	for range parallel {
+	for i := 0; i < parallel; i++ {
 		go ts.sched()
 	}
 	go ts.prepend()

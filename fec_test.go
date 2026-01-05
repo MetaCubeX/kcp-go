@@ -38,7 +38,7 @@ func TestFECEncodeConsecutive(t *testing.T) {
 	t.Logf("dataSize:%v, paritySize:%v", dataSize, paritySize)
 	group := 0
 	sent := 0
-	for i := range 100 {
+	for i := 0; i < 100; i++ {
 		if i%dataSize == 0 {
 			group++
 		}
@@ -84,7 +84,7 @@ func TestFECDecodeLoss(t *testing.T) {
 	totalRecovered := 0
 	totalParityLost := 0
 
-	for group := range 100 {
+	for group := 0; group < 100; group++ {
 		losses := make(map[int]bool)
 
 		lost := 0
@@ -107,7 +107,7 @@ func TestFECDecodeLoss(t *testing.T) {
 		}
 
 		recovered := 0
-		for i := range dataShards + parityShards {
+		for i := 0; i < dataShards+parityShards; i++ {
 			sent++
 			if losses[i] {
 				t.Logf("Lost packet %v in group %v", groupSize*group+i, group)
@@ -146,7 +146,7 @@ func BenchmarkFECDecode(b *testing.B) {
 	decoder := newFECDecoder(dataSize, paritySize)
 	b.ReportAllocs()
 	b.SetBytes(payLoad)
-	for i := 0; b.Loop(); i++ {
+	for i := 0; i < b.N; i++ {
 		if rand.Int()%(dataSize+paritySize) == 0 { // random loss
 			continue
 		}
@@ -169,7 +169,7 @@ func BenchmarkFECEncode(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(payLoad)
 	encoder := newFECEncoder(dataSize, paritySize, 0)
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		data := make([]byte, payLoad)
 		encoder.encode(data, 200)
 	}
@@ -198,7 +198,7 @@ func TestFECPAWS(t *testing.T) {
 	// This will generate 'dataShards' data packets and 'parityShards' parity packets.
 	// Total 'shardSize' packets.
 	// Their seqids should be [paws-shardSize, ..., paws-1]
-	for i := range dataShards {
+	for i := 0; i < dataShards; i++ {
 		data := make([]byte, payLoad)
 		// We can put some recognizable data
 		// Note: fecEncoder writes header at 0-6, and size at 6-8. Payload starts at 8.
@@ -232,7 +232,7 @@ func TestFECPAWS(t *testing.T) {
 	// 2. Encode the first group after PAWS
 	// Their seqids should be [0, ..., shardSize-1]
 	startIdx := len(packets)
-	for i := range dataShards {
+	for i := 0; i < dataShards; i++ {
 		data := make([]byte, payLoad)
 		binary.LittleEndian.PutUint32(data[8:], uint32(i+100)) // Different data
 
