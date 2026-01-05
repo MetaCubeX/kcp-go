@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/klauspost/reedsolomon v1.12.3
 	github.com/metacubex/randv2 v0.2.0
-	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
 	github.com/xtaci/lossyconn v0.0.0-20190602105132-8df528c0c9ae
 	golang.org/x/crypto v0.33.0

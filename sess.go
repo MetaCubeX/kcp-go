@@ -49,6 +49,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
+	"errors"
 	"hash/crc32"
 	"io"
 	"net"
@@ -56,7 +57,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pkg/errors"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
 	"golang.org/x/time/rate"
@@ -332,11 +332,11 @@ RESET_TIMER:
 				goto RESET_TIMER
 			}
 		case <-c:
-			return 0, errors.WithStack(errTimeout)
+			return 0, errTimeout
 		case <-s.chSocketReadError:
 			return 0, s.socketReadError.Load().(error)
 		case <-s.die:
-			return 0, errors.WithStack(io.ErrClosedPipe)
+			return 0, io.ErrClosedPipe
 		}
 	}
 }
@@ -361,7 +361,7 @@ RESET_TIMER:
 		case <-s.chSocketWriteError:
 			return 0, s.socketWriteError.Load().(error)
 		case <-s.die:
-			return 0, errors.WithStack(io.ErrClosedPipe)
+			return 0, io.ErrClosedPipe
 		default:
 		}
 
@@ -408,11 +408,11 @@ RESET_TIMER:
 				goto RESET_TIMER
 			}
 		case <-c:
-			return 0, errors.WithStack(errTimeout)
+			return 0, errTimeout
 		case <-s.chSocketWriteError:
 			return 0, s.socketWriteError.Load().(error)
 		case <-s.die:
-			return 0, errors.WithStack(io.ErrClosedPipe)
+			return 0, io.ErrClosedPipe
 		}
 	}
 }
@@ -435,7 +435,7 @@ func (s *UDPSession) Close() error {
 	})
 
 	if !once {
-		return errors.WithStack(io.ErrClosedPipe)
+		return io.ErrClosedPipe
 	}
 
 	atomic.AddUint64(&DefaultSnmp.CurrEstab, ^uint64(0))
@@ -886,7 +886,7 @@ func (s *UDPSession) SendOOB(data []byte) error {
 	case <-s.die:
 		// Session is closing.
 		defaultBufferPool.Put(buf)
-		return errors.WithStack(io.ErrClosedPipe)
+		return io.ErrClosedPipe
 	default:
 		// Drop silently to avoid blocking the sender.
 		// OOB delivery is best-effort by design.
@@ -1302,13 +1302,13 @@ func (l *Listener) AcceptKCP() (*UDPSession, error) {
 
 	select {
 	case <-timeout:
-		return nil, errors.WithStack(errTimeout)
+		return nil, errTimeout
 	case c := <-l.chAccepts:
 		return c, nil
 	case <-l.chSocketReadError:
 		return nil, l.socketReadError.Load().(error)
 	case <-l.die:
-		return nil, errors.WithStack(io.ErrClosedPipe)
+		return nil, io.ErrClosedPipe
 	}
 }
 
@@ -1339,7 +1339,7 @@ func (l *Listener) Close() error {
 	})
 
 	if !once {
-		return errors.WithStack(io.ErrClosedPipe)
+		return io.ErrClosedPipe
 	}
 
 	if l.ownConn {
@@ -1390,12 +1390,12 @@ func Listen(laddr string) (net.Listener, error) {
 func ListenWithOptions(laddr string, block BlockCrypt, dataShards, parityShards int) (*Listener, error) {
 	udpaddr, err := net.ResolveUDPAddr("udp", laddr)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	conn, err := net.ListenUDP("udp", udpaddr)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	return serveConn(block, dataShards, parityShards, conn, true)
@@ -1438,7 +1438,7 @@ func DialWithOptions(raddr string, block BlockCrypt, dataShards, parityShards in
 	// network type detection
 	udpaddr, err := net.ResolveUDPAddr("udp", raddr)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	network := "udp4"
@@ -1448,7 +1448,7 @@ func DialWithOptions(raddr string, block BlockCrypt, dataShards, parityShards in
 
 	conn, err := net.ListenUDP(network, nil)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	var convid uint32
@@ -1477,7 +1477,7 @@ func NewConn2(raddr net.Addr, block BlockCrypt, dataShards, parityShards int, co
 func NewConn(raddr string, block BlockCrypt, dataShards, parityShards int, conn net.PacketConn) (*UDPSession, error) {
 	udpaddr, err := net.ResolveUDPAddr("udp", raddr)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return NewConn2(udpaddr, block, dataShards, parityShards, conn)
 }

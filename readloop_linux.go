@@ -27,7 +27,6 @@ package kcp
 import (
 	"sync/atomic"
 
-	"github.com/pkg/errors"
 	"golang.org/x/net/ipv4"
 )
 
@@ -56,7 +55,7 @@ func (s *UDPSession) readLoop() {
 	for {
 		count, err := s.platform.batchConn.ReadBatch(msgs, 0)
 		if err != nil {
-			s.notifyReadError(errors.WithStack(err))
+			s.notifyReadError(err)
 			return
 		}
 
@@ -100,7 +99,7 @@ func (l *Listener) monitor() {
 	for {
 		count, err := batchConn.ReadBatch(msgs, 0)
 		if err != nil {
-			l.notifyReadError(errors.WithStack(err))
+			l.notifyReadError(err)
 			return
 		}
 

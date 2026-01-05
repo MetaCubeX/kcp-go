@@ -25,7 +25,6 @@ package kcp
 import (
 	"sync/atomic"
 
-	"github.com/pkg/errors"
 	"golang.org/x/net/ipv4"
 )
 
@@ -36,7 +35,7 @@ func (s *UDPSession) defaultTx(txqueue []ipv4.Message) {
 	for k := range txqueue {
 		n, err := s.conn.WriteTo(txqueue[k].Buffers[0], txqueue[k].Addr)
 		if err != nil {
-			s.notifyWriteError(errors.WithStack(err))
+			s.notifyWriteError(err)
 			break
 		}
 

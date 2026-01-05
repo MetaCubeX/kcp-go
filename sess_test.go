@@ -28,6 +28,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha1"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -44,7 +45,6 @@ import (
 
 	"golang.org/x/exp/slog"
 
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/pbkdf2"
 )
 
