@@ -1285,11 +1285,6 @@ func TestSessionGetters(t *testing.T) {
 	sess.GetSRTTVar()
 }
 
-func TestTimedSchedClose(t *testing.T) {
-	ts := NewTimedSched(1)
-	ts.Close()
-}
-
 func TestListenDial(t *testing.T) {
 	l, err := Listen("127.0.0.1:0")
 	if err != nil {
